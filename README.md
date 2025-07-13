@@ -132,6 +132,149 @@ The architecture consists of several components:
 
 
 
+### Setup dbt (Data Build Tool)
+1. The image for dbt postgres can be found at `https://github.com/dbt-labs/dbt-core/pkgs/container/dbt-postgres`
+2. Create the docker compose file as shown below
+   ```
+   services:
+       db:
+           container_name: postgres_container
+           image: postgres:14
+           ports:
+               - "5001:5432"
+           environment:
+               POSTGRES_USER: postgres
+               POSTGRES_PASSWORD: postgres
+               POSTGRES_DB: weather_db
+           env_file:
+               - .env
+           volumes:
+               - ./postgres/data:/var/lib/postgresql/data
+               - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+           networks:
+               - my_network
+   
+       airflow:
+           container_name: airflow_container
+           image: apache/airflow:3.0.0
+           ports:
+               - "8001:8080"
+           environment:
+               AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           env_file:
+               - .env
+           volumes:
+               - ./airflow/dags:/opt/airflow/dags
+               - ./airflow/logs:/opt/airflow/logs
+               - ./airflow/plugins:/opt/airflow/plugins
+               - ./code:/opt/airflow/code
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: >
+               bash -c "airflow db migrate && airflow standalone"
+       
+       dbt:
+           container_name: dbt_container
+           image:  ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+           platform: linux/amd64                               # if using macOS, Force the container to use the amd64 platform by adding this to your dbt service
+           volumes:
+               - ./dbt:/usr/app
+           working_dir: /usr/app
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: init my_project
+
+   networks:
+       my_network:
+           driver: bridge
+   ```
+3. Start the container using this command `docker compose run dbt`
+4. Add teh all the requred informations as required for dbt project setup.
+<img width="820" height="703" alt="image" src="https://github.com/user-attachments/assets/24536771-2ad1-406f-bac1-42e6836cc23b" />
+5. Change the command in dbt service of docker compose file to this. Keep rest of the services same as before
+   ```
+   dbt:
+     container_name: dbt_container
+     image:  ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+     platform: linux/amd64                               # if using macOS, Force the container to use the amd64 platform by adding this to your dbt service
+     volumes:
+         - ./dbt:/usr/app
+     working_dir: /usr/app
+     depends_on:
+         - db
+     networks:
+         - my_network
+     command: debug                                       # Change from init to debug to check database connection
+   ```
+6. We get error as profiles.yml file is not present and it is not properly mounted.
+7. Create a profiles.yml as per the `/.dbt/profiles.yml` and modify the docker compose as below
+   ```
+   services:
+       db:
+           container_name: postgres_container
+           image: postgres:14
+           ports:
+               - "5001:5432"
+           environment:
+               POSTGRES_USER: postgres
+               POSTGRES_PASSWORD: postgres
+               POSTGRES_DB: weather_db
+           env_file:
+               - .env
+           volumes:
+               - ./postgres/data:/var/lib/postgresql/data
+               - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+           networks:
+               - my_network
+   
+       airflow:
+           container_name: airflow_container
+           image: apache/airflow:3.0.0
+           ports:
+               - "8001:8080"
+           environment:
+               AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           env_file:
+               - .env
+           volumes:
+               - ./airflow/dags:/opt/airflow/dags
+               - ./airflow/logs:/opt/airflow/logs
+               - ./airflow/plugins:/opt/airflow/plugins
+               - ./code:/opt/airflow/code
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: >
+               bash -c "airflow db migrate && airflow standalone"
+       
+       dbt:
+           container_name: dbt_container
+           image:  ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+           platform: linux/amd64                               # if using macOS, Force the container to use the amd64 platform by adding this to your dbt service
+           volumes:
+               - ./dbt/my_project:/usr/app
+               - ./dbt:/root/.dbt
+           working_dir: /usr/app
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: run
+   
+   networks:
+       my_network:
+           driver: bridge
+   ```
+8. Keep the folder structure as below given
+<img width="293" height="723" alt="image" src="https://github.com/user-attachments/assets/88a176a5-7d56-4bc3-b8d7-54d0078d3c20" />
+
+
+
 
 
 
