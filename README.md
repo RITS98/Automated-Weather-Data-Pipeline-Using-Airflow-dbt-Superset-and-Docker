@@ -197,6 +197,7 @@ The architecture consists of several components:
 <img width="820" height="703" alt="image" src="https://github.com/user-attachments/assets/24536771-2ad1-406f-bac1-42e6836cc23b" />
 
 5. Change the command in dbt service of docker compose file to this. Keep rest of the services same as before
+   
    ```
    dbt:
      container_name: dbt_container
@@ -213,6 +214,7 @@ The architecture consists of several components:
    ```
 6. We get error as profiles.yml file is not present and it is not properly mounted.
 7. Create a profiles.yml as per the `/.dbt/profiles.yml` and modify the docker compose as below
+   
    ```
    services:
        db:
@@ -271,7 +273,9 @@ The architecture consists of several components:
        my_network:
            driver: bridge
    ```
+   
 8. Keep the folder structure as below given
+   
 <img width="293" height="723" alt="image" src="https://github.com/user-attachments/assets/88a176a5-7d56-4bc3-b8d7-54d0078d3c20" />
 
 
