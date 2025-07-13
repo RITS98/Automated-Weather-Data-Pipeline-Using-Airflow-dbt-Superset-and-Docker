@@ -71,6 +71,8 @@ The architecture consists of several components:
                POSTGRES_USER: postgres
                POSTGRES_PASSWORD: postgres
                POSTGRES_DB: weather_db
+           env_file:                              # Loads the environment variable to container shell
+               - .env
            volumes:
                - ./postgres/data:/var/lib/postgresql/data
                - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql               # This creates the airflow user for the database airflow
@@ -84,10 +86,13 @@ The architecture consists of several components:
                - "8001:8080"
            environment:
                AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           env_file:                                                     # Loads the environment variable to container shell
+               - .env
            volumes:                                                      # this folders in the volume are shared between local and container for persistant storage
                - ./airflow/dags:/opt/airflow/dags                        # mount this folders to store dags into the container
                - ./airflow/logs:/opt/airflow/logs
                - ./airflow/plugins:/opt/airflow/plugins
+               - ./code:/opt/airflow/code
            depends_on:
                - db
            networks:
@@ -109,6 +114,7 @@ The architecture consists of several components:
 <img width="1180" height="450" alt="image" src="https://github.com/user-attachments/assets/011a392f-82c1-42e2-ba1c-a680f76a2107" />
 
 <img width="853" height="692" alt="image" src="https://github.com/user-attachments/assets/38572bbb-8061-4499-87bb-269460e6226e" />
+
 
 
 
