@@ -16,6 +16,7 @@ The architecture consists of several components:
 - **dbt**: Transforms the raw data into a structured format.
 - **PostgreSQL**: The database where the processed data is stored.
 - **Superset**: Provides a user interface for visualizing the data.
+- **Docker**: Each component runs in its own Docker container, allowing for easy deployment and management.
 
 
 <img width="730" height="263" alt="image" src="https://github.com/user-attachments/assets/73cfc309-cce0-481f-bc51-58e62d013a71" />
