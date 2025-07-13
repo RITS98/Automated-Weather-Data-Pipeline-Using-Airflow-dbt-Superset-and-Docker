@@ -24,7 +24,8 @@ The architecture consists of several components:
 
 ## Project Building Steps
 
-1. Create a PostgreSQL Database Container using `docker-compose.yml`
+1. Write a PostgreSQL Database Container in `docker-compose.yml`
+
    ```
     services:
     db:
@@ -39,7 +40,11 @@ The architecture consists of several components:
         volumes:
             - ./postgres_data:/var/lib/postgresql/data         # local_folder which will be mounted as data storage folder in the container for persistant storage
    ```
-   
+2. Create the container is created by running `docker-compose up`
+3. Check the container whether it is running or not by running this command `docker ps`
+4. Check the database `weather_db` is created or not as shown below
+<img width="998" height="482" alt="image" src="https://github.com/user-attachments/assets/c438a9ee-2d07-4a22-9c47-5eeebc3b42b1" />
+
 
 
 
