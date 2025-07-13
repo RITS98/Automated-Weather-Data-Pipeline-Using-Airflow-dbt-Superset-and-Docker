@@ -24,6 +24,7 @@ The architecture consists of several components:
 
 ## Project Building Steps
 
+### Setup Database
 1. Write a PostgreSQL Database Container in `docker-compose.yml`
 
    ```
@@ -38,12 +39,78 @@ The architecture consists of several components:
             POSTGRES_PASSWORD: postgres            
             POSTGRES_DB: weather_db
         volumes:
-            - ./postgres_data:/var/lib/postgresql/data         # local_folder which will be mounted as data storage folder in the container for persistant storage
+            - ./postgres/data:/var/lib/postgresql/data         # local_folder which will be mounted as data storage folder in the container for persistant storage
    ```
 2. Create the container is created by running `docker-compose up`
 3. Check the container whether it is running or not by running this command `docker ps`
 4. Check the database `weather_db` is created or not as shown below
 <img width="998" height="482" alt="image" src="https://github.com/user-attachments/assets/c438a9ee-2d07-4a22-9c47-5eeebc3b42b1" />
+
+
+### Setup Airflow
+1. Create a `airflow_init.sql` file with following command and move it to `./postgres/airflow_init.sql`. It contains the below sql commands:
+  ```
+   CREATE USER airflow WITH PASSWORD 'airflow';
+   CREATE DATABASE airflow_db OWNER airflow;
+   ```
+   This airflow db stores the metadata about the dags.
+2. Create `\dags`, `\logs` and `\plugins` folder in the local as shown below.
+   <img width="645" height="792" alt="image" src="https://github.com/user-attachments/assets/57c63c0b-6fc5-4480-ab37-599d0c64dbed" />
+
+   To change permission: ```sudo chmod -R g+rw /postgres```
+
+3. Change the docker compose file as follows:
+   ```
+   services:
+       db:
+           container_name: postgres_container
+           image: postgres:14
+           ports:
+               - "5001:5432"
+           environment:
+               POSTGRES_USER: postgres
+               POSTGRES_PASSWORD: postgres
+               POSTGRES_DB: weather_db
+           volumes:
+               - ./postgres/data:/var/lib/postgresql/data
+               - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql               # This creates the airflow user for the database airflow
+           networks:
+               - my_network
+
+       airflow:
+           container_name: airflow_container
+           image: apache/airflow:3.0.0
+           ports:
+               - "8001:8080"
+           environment:
+               AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           volumes:                                                      # this folders in the volume are shared between local and container for persistant storage
+               - ./airflow/dags:/opt/airflow/dags                        # mount this folders to store dags into the container
+               - ./airflow/logs:/opt/airflow/logs
+               - ./airflow/plugins:/opt/airflow/plugins
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: >
+               bash -c "airflow db migrate && airflow standalone"         # to migrate the metadata to postgres database
+
+
+   # common network to allow commumnication between containers
+   networks:
+       my_network:
+           driver: bridge
+   ```
+4.  If containers are up, use `docker compose down` to remove the containers and restart using `docker compose up`
+5.  Takes around 2 minutes to start with all services in the container
+6.  Search for Password and copy it and login at `localhost:8001`
+<img width="1233" height="350" alt="image" src="https://github.com/user-attachments/assets/6411c8e0-5c9e-418e-8563-23540581888c" />
+
+<img width="1180" height="450" alt="image" src="https://github.com/user-attachments/assets/011a392f-82c1-42e2-ba1c-a680f76a2107" />
+
+<img width="853" height="692" alt="image" src="https://github.com/user-attachments/assets/38572bbb-8061-4499-87bb-269460e6226e" />
+
+
 
 
 
