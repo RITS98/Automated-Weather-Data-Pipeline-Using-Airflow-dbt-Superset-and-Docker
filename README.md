@@ -22,5 +22,25 @@ The architecture consists of several components:
 <img width="730" height="263" alt="image" src="https://github.com/user-attachments/assets/73cfc309-cce0-481f-bc51-58e62d013a71" />
 
 
+## Project Building Steps
+
+1. Create a PostgreSQL Database Container using `docker-compose.yml`
+   ```
+    services:
+    db:
+        container_name: postgres_container        # name of the container
+        image: postgres:14                        # postgres image containing version 14
+        ports:
+            - "5001:5432"                         # local_port:container_port
+        environment:  
+            POSTGRES_USER: postgres               # database credentials
+            POSTGRES_PASSWORD: postgres            
+            POSTGRES_DB: weather_db
+        volumes:
+            - ./postgres_data:/var/lib/postgresql/data         # local_folder which will be mounted as data storage folder in the container for persistant storage
+   ```
+   
+
+
 
 
