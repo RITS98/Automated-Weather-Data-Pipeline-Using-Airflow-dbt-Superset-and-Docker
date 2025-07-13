@@ -118,6 +118,19 @@ The architecture consists of several components:
 
 
 
+### Try a Mock Run of the code
+1. Keep the files as per the below picture:
+<img width="290" height="440" alt="image" src="https://github.com/user-attachments/assets/70c2d00f-f852-4569-8269-fcd8c5b89448" />
+
+2. The docker compose must be same as above.
+3. See the Airflow Run as shown below
+   <img width="1684" height="854" alt="image" src="https://github.com/user-attachments/assets/829ab17e-58db-49fd-b01c-b62750ff801b" />
+4. Check the database
+<img width="732" height="236" alt="image" src="https://github.com/user-attachments/assets/9b874062-ce8e-489f-b2f1-3059b9509c3e" />
+
+<img width="1387" height="407" alt="image" src="https://github.com/user-attachments/assets/d6e4a85c-4d95-4ca1-974b-54097c97db59" />
+
+
 
 
 
