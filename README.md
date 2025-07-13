@@ -278,8 +278,232 @@ The architecture consists of several components:
    
 <img width="293" height="723" alt="image" src="https://github.com/user-attachments/assets/88a176a5-7d56-4bc3-b8d7-54d0078d3c20" />
 
+### Create dbt code
+1. Setup sources in models folder of dbt
+2. Setup staging layer
+3. Setup mart layer
+4. All the sql data transformation files can be found in the `dbt` folder
+5. To mock execute, run `docker compose up dbt`
+
+### Orchestrate DBT container using Docker Operator
+1. Rewrite the docker file as shown delow.
+2. We need to give docker socker access to airflow. That is why we need to mount the docker.sock
+   ```
+   services:
+       db:
+           container_name: postgres_container
+           image: postgres:14
+           ports:
+               - "5001:5432"
+           environment:
+               POSTGRES_USER: postgres
+               POSTGRES_PASSWORD: postgres
+               POSTGRES_DB: weather_db
+           env_file:
+               - .env
+           volumes:
+               - ./postgres/data:/var/lib/postgresql/data
+               - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+           networks:
+               - my_network
+   
+       airflow:
+           container_name: airflow_container
+           image: apache/airflow:3.0.0
+           ports:
+               - "8001:8080"
+           environment:
+               AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           env_file:
+               - .env
+           volumes:
+               - ./airflow/dags:/opt/airflow/dags
+               - ./airflow/logs:/opt/airflow/logs
+               - ./airflow/plugins:/opt/airflow/plugins
+               - ./code:/opt/airflow/code
+               - /var/run/docker.sock:/var/run/docker.sock
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: >
+               bash -c "airflow db migrate && airflow standalone"
+       
+       dbt:
+           container_name: dbt_container
+           image:  ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+           platform: linux/amd64                               # if using macOS, Force the container to use the amd64 platform by adding this to your dbt service
+           volumes:
+               - ./dbt/my_project:/usr/app
+               - ./dbt:/root/.dbt
+           working_dir: /usr/app
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: run
+   
+   networks:
+       my_network:
+           driver: bridge
+   ```
+
+4. In the dag file `dbt_orchestrator`, use a DockerOperator to run the container
+5. Every time airflow, runs the container, it created a separate network. We need to add that network instead of docker-compose yml network confirguration.
+6. Check the dag file for details on how to mount specific folders using DockerOperator.
+7. Check the mock results below.
+   <img width="1705" height="457" alt="image" src="https://github.com/user-attachments/assets/ca7d820a-1a03-41c8-9bf8-bd31af86b7df" />
+
+   <img width="1696" height="683" alt="image" src="https://github.com/user-attachments/assets/6fcf72d6-2a08-4276-8858-995adb007dd1" />
 
 
+
+### Setup Apache Superset for visualization
+1. Go to the docker-compose file apache superset at this link `https://github.com/apache/superset/blob/master/docker-compose.yml`  
+2. I am only taking the essential componenets of the Apache Superset.
+3. Check the docker compose as shown below
+   ```
+   x-superset-user: &superset-user root
+   x-superset-volumes: &superset-volumes
+     # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+     - ./docker:/app/docker
+     - ./docker/superset_config.py:/app/pythonpath/superset_config.py
+   
+   services:
+       db:
+           container_name: postgres_container
+           image: postgres:14
+           ports:
+               - "5001:5432"
+           environment:
+               POSTGRES_USER: postgres
+               POSTGRES_PASSWORD: postgres
+               POSTGRES_DB: weather_db
+           env_file:
+               - .env
+           volumes:
+               - ./postgres/data:/var/lib/postgresql/data
+               - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+               - ./postgres/superset_init.sql:/docker-entrypoint-initdb.d/superset_init.sql
+           networks:
+               - my_network
+   
+       airflow:
+           container_name: airflow_container
+           image: apache/airflow:3.0.0
+           ports:
+               - "8001:8080"
+           environment:
+               AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+           env_file:
+               - .env
+           volumes:
+               - ./airflow/dags:/opt/airflow/dags
+               - ./airflow/logs:/opt/airflow/logs
+               - ./airflow/plugins:/opt/airflow/plugins
+               - ./code:/opt/airflow/code
+               - /var/run/docker.sock:/var/run/docker.sock
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: >
+               bash -c "airflow db migrate && airflow standalone"
+       
+       dbt:
+           container_name: dbt_container
+           image:  ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+           platform: linux/amd64                               # if using macOS, Force the container to use the amd64 platform by adding this to your dbt service
+           volumes:
+               - ./dbt/my_project:/usr/app
+               - ./dbt:/root/.dbt
+           working_dir: /usr/app
+           depends_on:
+               - db
+           networks:
+               - my_network
+           command: run
+   
+       superset:
+           env_file:
+           - path: docker/.env # default
+             required: true
+           image: apache/superset:3.0.0-py310
+           container_name: superset_app
+           command: ["/app/docker/docker-bootstrap.sh", "app"]
+           restart: unless-stopped
+           ports:
+               - 8088:8088
+           extra_hosts:
+               - "host.docker.internal:host-gateway"
+           user: *superset-user
+           environment:
+               SUPERSET__LOG_LEVEL: "${SUPERSET__LOG_LEVEL:-INFO}"
+               DATABASE_DB: "superset_db"
+           depends_on:
+               superset-init:
+                   condition: service_completed_successfully
+           volumes: *superset-volumes
+           networks:
+               - my_network
+       
+       redis:
+           image: redis:7
+           container_name: superset_cache
+           restart: unless-stopped
+           ports:
+               - "127.0.0.1:6379:6379"
+           volumes:
+               - redis:/data
+           networks:
+               - my_network
+   
+       
+   
+       superset-init:
+           image: apache/superset:3.0.0-py310
+           container_name: superset_init
+           command: ["/app/docker/docker-init.sh"]
+           env_file:
+           - path: docker/.env # default
+             required: true
+           depends_on:
+               db:
+                   condition: service_started
+               redis:
+                   condition: service_started
+           user: *superset-user
+           volumes: *superset-volumes
+           environment:
+               SUPERSET__LOAD_EXAMPLES: "no"
+               SUPERSET__LOG_LEVEL: "${SUPERSET__LOG_LEVEL:-INFO}"
+               DATABASE_DB: "superset_db"
+           healthcheck:
+               disable: true
+           networks:
+               - my_network
+   
+   networks:
+       my_network:
+           driver: bridge
+   
+   volumes:
+       redis:
+           external: false
+   ```
+
+5. Create a docker folder in the base path as shown below and copy the following files from docker folder of github repo
+  - `docker-init.sh`
+  - `docker-bootstrap.sh`
+  - `.env`
+  - `pythonpath_dev\superset_config.py`
+
+5. Create Postgres Apache Superset User and password using the `superset_init.sql` file inside the `postgres` folder
+
+6. Make the changes in .env file as given in the repo to match the user credentials with that of postgres user credentials as mentioned in `superset_init.sql`
+
+7. This the how it looks and it is loaded with examples datasets.
+<img width="1685" height="597" alt="image" src="https://github.com/user-attachments/assets/4b86aa20-0d45-4dda-9ef9-74fc212f4054" />
 
 
 
