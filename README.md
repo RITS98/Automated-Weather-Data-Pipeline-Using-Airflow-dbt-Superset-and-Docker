@@ -514,6 +514,8 @@ The architecture consists of several components:
 11. Create a Visualization
 <img width="1708" height="861" alt="image" src="https://github.com/user-attachments/assets/844266c8-69d9-45fe-9335-82a7782f890a" />
 
+<img width="763" height="488" alt="image" src="https://github.com/user-attachments/assets/ad551c4b-48e4-4e65-bd8a-b9dc1aff0ca3" />
+
 
 
 
