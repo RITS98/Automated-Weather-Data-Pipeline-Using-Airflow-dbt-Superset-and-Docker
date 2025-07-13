@@ -1,0 +1,17 @@
+sources:
+    - name: dev
+      database: weather_db
+      tables:
+        - name: raw_weather_data
+          columns:
+            - name: id
+            - name: city
+            - name: latitiude
+            - name: longitude
+            - name: temperature_cel
+            - name: wind_speed
+            - name: humidity
+            - name: weather_description
+            - name: time
+            - name: inserated_at
+            - name: utc_offset

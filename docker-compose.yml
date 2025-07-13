@@ -1,3 +1,9 @@
+x-superset-user: &superset-user root
+x-superset-volumes: &superset-volumes
+  # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+  - ./docker:/app/docker
+  - ./docker/superset_config.py:/app/pythonpath/superset_config.py
+
 services:
     db:
         container_name: postgres_container
@@ -13,6 +19,7 @@ services:
         volumes:
             - ./postgres/data:/var/lib/postgresql/data
             - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+            - ./postgres/superset_init.sql:/docker-entrypoint-initdb.d/superset_init.sql
         networks:
             - my_network
 
@@ -30,6 +37,7 @@ services:
             - ./airflow/logs:/opt/airflow/logs
             - ./airflow/plugins:/opt/airflow/plugins
             - ./code:/opt/airflow/code
+            - /var/run/docker.sock:/var/run/docker.sock
         depends_on:
             - db
         networks:
@@ -51,6 +59,69 @@ services:
             - my_network
         command: run
 
+    superset:
+        env_file:
+        - path: docker/.env # default
+          required: true
+        image: apache/superset:3.0.0-py310
+        container_name: superset_app
+        command: ["/app/docker/docker-bootstrap.sh", "app"]
+        restart: unless-stopped
+        ports:
+            - 8088:8088
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        user: *superset-user
+        environment:
+            SUPERSET__LOG_LEVEL: "${SUPERSET__LOG_LEVEL:-INFO}"
+            DATABASE_DB: "superset_db"
+        depends_on:
+            superset-init:
+                condition: service_completed_successfully
+        volumes: *superset-volumes
+        networks:
+            - my_network
+    
+    redis:
+        image: redis:7
+        container_name: superset_cache
+        restart: unless-stopped
+        ports:
+            - "127.0.0.1:6379:6379"
+        volumes:
+            - redis:/data
+        networks:
+            - my_network
+
+    
+
+    superset-init:
+        image: apache/superset:3.0.0-py310
+        container_name: superset_init
+        command: ["/app/docker/docker-init.sh"]
+        env_file:
+        - path: docker/.env # default
+          required: true
+        depends_on:
+            db:
+                condition: service_started
+            redis:
+                condition: service_started
+        user: *superset-user
+        volumes: *superset-volumes
+        environment:
+            SUPERSET__LOAD_EXAMPLES: "no"
+            SUPERSET__LOG_LEVEL: "${SUPERSET__LOG_LEVEL:-INFO}"
+            DATABASE_DB: "superset_db"
+        healthcheck:
+            disable: true
+        networks:
+            - my_network
+
 networks:
     my_network:
         driver: bridge
+
+volumes:
+    redis:
+        external: false

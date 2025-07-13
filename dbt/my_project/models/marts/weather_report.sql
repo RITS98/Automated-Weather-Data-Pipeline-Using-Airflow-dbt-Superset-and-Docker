@@ -1,0 +1,19 @@
+{{
+    config(
+        materialized='table',
+        unique_key='id',
+    )
+}}
+SELECT
+    city,
+    latitude,
+    longitude,
+    temperature_in_celcius,
+    temperature_in_fahrenheit,
+    wind_speed_in_kmph,
+    wind_speed_in_mph,
+    humidity,   
+    weather_description,
+    weather_time_local
+FROM
+    {{ ref('stg_weather_data') }}
