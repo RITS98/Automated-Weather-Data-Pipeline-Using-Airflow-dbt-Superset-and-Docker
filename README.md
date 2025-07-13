@@ -195,6 +195,7 @@ The architecture consists of several components:
 3. Start the container using this command `docker compose run dbt`
 4. Add teh all the requred informations as required for dbt project setup.
 <img width="820" height="703" alt="image" src="https://github.com/user-attachments/assets/24536771-2ad1-406f-bac1-42e6836cc23b" />
+
 5. Change the command in dbt service of docker compose file to this. Keep rest of the services same as before
    ```
    dbt:
