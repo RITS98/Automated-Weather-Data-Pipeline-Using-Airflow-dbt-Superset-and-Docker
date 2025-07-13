@@ -18,6 +18,7 @@ The architecture consists of several components:
 - **Superset**: Provides a user interface for visualizing the data.
 
 
+<img width="730" height="263" alt="image" src="https://github.com/user-attachments/assets/73cfc309-cce0-481f-bc51-58e62d013a71" />
 
 
 
