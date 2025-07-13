@@ -505,5 +505,15 @@ The architecture consists of several components:
 7. This the how it looks and it is loaded with examples datasets.
 <img width="1685" height="597" alt="image" src="https://github.com/user-attachments/assets/4b86aa20-0d45-4dda-9ef9-74fc212f4054" />
 
+8. Create a Database connection to `weather_db` by clicking on the plus button on top right corner.
+9. Create a dataset.
+<img width="1707" height="785" alt="image" src="https://github.com/user-attachments/assets/07288172-36e7-435d-a136-c96c4b4b8c21" />
+10. Select a chart type.
+<img width="865" height="846" alt="image" src="https://github.com/user-attachments/assets/68db76b1-6dda-4661-897e-711591d090a2" />
+
+11. Create a Visualization
+<img width="1708" height="861" alt="image" src="https://github.com/user-attachments/assets/844266c8-69d9-45fe-9335-82a7782f890a" />
+
+
 
 
